@@ -4,26 +4,50 @@ import { motion } from 'framer-motion';
 import { Calendar, FileText, Users, Video, Clock, Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout, StatCard, SectionHeader, StatusBadge } from '@/components/DashboardLayout';
-import { CURRENT_PATIENT, PATIENT_APPOINTMENTS, PRESCRIPTIONS } from '@/data/index';
+import { PRESCRIPTIONS } from '@/data/index'; // Keep mock prescriptions for now if not fully implemented in UI
 import { ROUTE_PATHS, STATUS_CONFIG } from '@/lib/index';
+import api from '@/lib/axios';
+import { useAuthStore } from '@/store/authStore';
 
 export default function PatientDashboard() {
   const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const user = useAuthStore(state => state.user);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 1400);
-    return () => clearTimeout(t);
+    const fetchData = async () => {
+      try {
+        const { data } = await api.get('/appointments/me');
+        const mapped = data.map((d: any) => {
+          const dateObj = new Date(d.appointmentDate);
+          return {
+            id: d._id,
+            doctorName: d.doctor.name,
+            specialty: 'Specialist', // Generic since it's not in User model yet
+            status: d.status,
+            date: dateObj.toLocaleDateString(),
+            time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+        });
+        setAppointments(mapped);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const upcoming = PATIENT_APPOINTMENTS.filter(a => a.status === 'upcoming');
-  const completed = PATIENT_APPOINTMENTS.filter(a => a.status === 'completed');
+  const upcoming = appointments.filter(a => a.status === 'scheduled');
+  const completed = appointments.filter(a => a.status === 'completed');
 
   return (
-    <DashboardLayout role="patient" userName={CURRENT_PATIENT.name} userEmail={CURRENT_PATIENT.email}>
+    <DashboardLayout role="patient" userName={user?.name || 'Patient'} userEmail={user?.email || ''}>
       {/* Welcome Bar */}
       <div className="mb-6">
-        <h1 className="text-foreground font-bold text-2xl">Good morning, {CURRENT_PATIENT.name.split(' ')[0]} 👋</h1>
-        <p className="text-muted-foreground text-sm mt-1">Here's your health summary for today, May 2, 2026.</p>
+        <h1 className="text-foreground font-bold text-2xl">Good morning, {user?.name?.split(' ')[0] || 'Patient'} 👋</h1>
+        <p className="text-muted-foreground text-sm mt-1">Here's your health summary for today.</p>
       </div>
 
       {/* Stats Cards */}
@@ -130,7 +154,7 @@ export default function PatientDashboard() {
                   <div key={i} className="bg-card rounded-xl p-3 border border-border animate-pulse h-16" />
                 ))
               ) : (
-                PATIENT_APPOINTMENTS.filter(a => a.status !== 'upcoming').slice(0, 3).map((apt, i) => (
+                appointments.filter(a => a.status !== 'scheduled').slice(0, 3).map((apt, i) => (
                   <motion.div
                     key={apt.id}
                     initial={{ opacity: 0, y: 10 }}

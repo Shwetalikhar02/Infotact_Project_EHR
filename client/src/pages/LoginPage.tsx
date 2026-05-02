@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROUTE_PATHS } from '@/lib/index';
 import type { UserRole } from '@/lib/index';
+import api from '@/lib/axios';
+import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
+  const setCredentials = useAuthStore((state) => state.setCredentials);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('patient');
@@ -35,13 +38,33 @@ export default function LoginPage() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    
     setErrors({});
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    if (role === 'patient') navigate(ROUTE_PATHS.PATIENT_DASHBOARD);
-    else if (role === 'doctor') navigate(ROUTE_PATHS.DOCTOR_DASHBOARD);
-    else navigate(ROUTE_PATHS.ADMIN_DASHBOARD);
+    
+    try {
+      const response = await api.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
+      
+      const data = response.data;
+      
+      // Save user to Zustand store
+      setCredentials(data, data.token);
+      
+      // Navigate based on role returned from backend
+      if (data.role === 'patient') navigate(ROUTE_PATHS.PATIENT_DASHBOARD);
+      else if (data.role === 'doctor') navigate(ROUTE_PATHS.DOCTOR_DASHBOARD);
+      else navigate(ROUTE_PATHS.ADMIN_DASHBOARD);
+      
+    } catch (error: any) {
+      setErrors({ 
+        email: error.response?.data?.message || 'Failed to sign in. Please check your credentials.' 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

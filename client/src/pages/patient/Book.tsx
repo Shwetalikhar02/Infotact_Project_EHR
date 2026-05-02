@@ -1,45 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Star, Calendar, ChevronDown, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { DOCTORS, CURRENT_PATIENT } from '@/data/index';
-import { SPECIALTIES, ROUTE_PATHS } from '@/lib/index';
-import type { Doctor } from '@/lib/index';
+import { SPECIALTIES } from '@/lib/index';
+import api from '@/lib/axios';
+import { useAuthStore } from '@/store/authStore';
 
 const TIME_SLOTS = ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM'];
 
 export default function PatientBook() {
   const [specialty, setSpecialty] = useState('All Specialties');
   const [search, setSearch] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
   const [selectedSlot, setSelectedSlot] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [reasonForVisit, setReasonForVisit] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const user = useAuthStore(state => state.user);
 
-  const filtered = DOCTORS.filter(d => {
-    const matchSpec = specialty === 'All Specialties' || d.specialty === specialty;
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.specialty.toLowerCase().includes(search.toLowerCase());
-    return matchSpec && matchSearch && d.status === 'active';
+  useEffect(() => {
+    api.get('/auth/doctors')
+      .then(res => setDoctors(res.data))
+      .catch(err => console.error("Error fetching doctors", err));
+  }, []);
+
+  const filtered = doctors.filter(d => {
+    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
+    return matchSearch;
   });
 
-  const handleBook = () => {
-    setBooked(true);
-    setTimeout(() => {
-      setShowConfirm(false);
-      setBooked(false);
-      setSelectedDoctor(null);
-      setSelectedSlot('');
-      setSelectedDate('');
-    }, 2000);
+  const handleBook = async () => {
+    try {
+      // Parse the time slot into a JS Date object
+      // format: selectedDate="2026-05-02", selectedSlot="9:00 AM"
+      const timeParts = selectedSlot.match(/(\d+):(\d+)\s(AM|PM)/);
+      let hours = 0;
+      let minutes = 0;
+      if (timeParts) {
+        hours = parseInt(timeParts[1]);
+        minutes = parseInt(timeParts[2]);
+        if (timeParts[3] === 'PM' && hours < 12) hours += 12;
+        if (timeParts[3] === 'AM' && hours === 12) hours = 0;
+      }
+
+      const dateObj = new Date(selectedDate);
+      dateObj.setHours(hours, minutes, 0, 0);
+
+      await api.post('/appointments', {
+        doctorId: selectedDoctor._id,
+        appointmentDate: dateObj.toISOString(),
+        reasonForVisit: reasonForVisit || 'General Consultation'
+      });
+
+      setBooked(true);
+      setTimeout(() => {
+        setShowConfirm(false);
+        setBooked(false);
+        setSelectedDoctor(null);
+        setSelectedSlot('');
+        setSelectedDate('');
+        setReasonForVisit('');
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to book appointment", error);
+      alert("Failed to book appointment");
+    }
   };
 
   return (
-    <DashboardLayout role="patient" userName={CURRENT_PATIENT.name} userEmail={CURRENT_PATIENT.email}>
+    <DashboardLayout role="patient" userName={user?.name || ''} userEmail={user?.email || ''}>
       <div className="mb-6">
         <h1 className="text-foreground font-bold text-2xl">Book Appointment</h1>
         <p className="text-muted-foreground text-sm mt-1">Search and book appointments with our specialist doctors.</p>
@@ -50,7 +84,7 @@ export default function PatientBook() {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search doctors by name or specialty..."
+            placeholder="Search doctors by name..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
@@ -72,12 +106,12 @@ export default function PatientBook() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filtered.map((doctor, i) => (
           <motion.div
-            key={doctor.id}
+            key={doctor._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
             className={`bg-card rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden ${
-              selectedDoctor?.id === doctor.id ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/50'
+              selectedDoctor?._id === doctor._id ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/50'
             }`}
             onClick={() => setSelectedDoctor(doctor)}
           >
@@ -85,40 +119,33 @@ export default function PatientBook() {
             <div className="bg-primary h-24 flex items-end justify-center pb-0 relative">
               <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center translate-y-8">
                 <span className="text-white font-bold text-xl">
-                  {doctor.name.split(' ').slice(1).join(' ').charAt(0)}
+                  {doctor.name.split(' ').slice(1).join(' ').charAt(0) || doctor.name.charAt(0)}
                 </span>
               </div>
             </div>
 
             <div className="pt-10 px-4 pb-4 text-center">
               <h3 className="text-foreground font-semibold text-sm">{doctor.name}</h3>
-              <p className="text-accent text-xs font-medium mt-0.5">{doctor.specialty}</p>
+              <p className="text-accent text-xs font-medium mt-0.5">Specialist</p>
 
               <div className="flex items-center justify-center gap-1 mt-2">
                 <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                <span className="text-foreground text-xs font-semibold">{doctor.rating}</span>
-                <span className="text-muted-foreground text-xs">({doctor.reviews})</span>
+                <span className="text-foreground text-xs font-semibold">5.0</span>
+                <span className="text-muted-foreground text-xs">(120)</span>
               </div>
 
-              <p className="text-muted-foreground text-xs mt-1">{doctor.experience} experience</p>
-
-              {/* Availability Tags */}
-              <div className="flex flex-wrap gap-1 justify-center mt-3 mb-3">
-                {doctor.availability.slice(0, 3).map(day => (
-                  <span key={day} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{day}</span>
-                ))}
-              </div>
+              <p className="text-muted-foreground text-xs mt-1">10+ years experience</p>
 
               <Button
                 size="sm"
-                className={`w-full rounded-full text-xs ${
-                  selectedDoctor?.id === doctor.id
+                className={`w-full rounded-full text-xs mt-4 ${
+                  selectedDoctor?._id === doctor._id
                     ? 'bg-accent hover:bg-accent/90 text-white'
                     : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                 }`}
                 onClick={(e) => { e.stopPropagation(); setSelectedDoctor(doctor); }}
               >
-                {selectedDoctor?.id === doctor.id ? '✓ Selected' : 'Book Now'}
+                {selectedDoctor?._id === doctor._id ? '✓ Selected' : 'Book Now'}
               </Button>
             </div>
           </motion.div>
@@ -185,14 +212,14 @@ export default function PatientBook() {
                   </div>
                 </div>
 
-                <div className="flex items-end">
+                <div className="flex flex-col justify-end">
                   <Button
                     onClick={() => selectedDate && selectedSlot && setShowConfirm(true)}
                     disabled={!selectedDate || !selectedSlot}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 whitespace-nowrap"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 whitespace-nowrap mt-4"
                   >
                     <Calendar size={16} className="mr-2" />
-                    Confirm Booking
+                    Continue to Book
                   </Button>
                 </div>
               </div>
@@ -232,10 +259,6 @@ export default function PatientBook() {
                       <span className="text-foreground font-medium">{selectedDoctor.name}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Specialty</span>
-                      <span className="text-foreground font-medium">{selectedDoctor.specialty}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Date</span>
                       <span className="text-foreground font-medium">{selectedDate}</span>
                     </div>
@@ -244,6 +267,16 @@ export default function PatientBook() {
                       <span className="text-foreground font-medium">{selectedSlot}</span>
                     </div>
                   </div>
+                  
+                  <div className="mb-5">
+                    <label className="text-foreground text-sm font-medium block mb-2">Reason for Visit</label>
+                    <Input 
+                      placeholder="E.g., Annual Checkup, Fever..." 
+                      value={reasonForVisit}
+                      onChange={(e) => setReasonForVisit(e.target.value)}
+                    />
+                  </div>
+
                   <div className="flex gap-3">
                     <Button variant="outline" className="flex-1 rounded-full" onClick={() => setShowConfirm(false)}>Cancel</Button>
                     <Button className="flex-1 rounded-full bg-accent hover:bg-accent/90 text-white" onClick={handleBook}>
