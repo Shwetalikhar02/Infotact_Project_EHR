@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { API_BASE_URL } from './api';
 
 // Create a custom axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Backend base URL
+  baseURL: `${API_BASE_URL}/api`, // Backend base URL
   headers: {
     'Content-Type': 'application/json',
   },
