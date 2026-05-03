@@ -15,8 +15,10 @@ app.use(helmet()); // Security headers
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://your-app-name.vercel.app'
-  ],
+    'http://localhost:8080',
+    process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
+    'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
+  ].filter(Boolean),
   credentials: true
 })); // Cross-Origin Resource Sharing
 app.use(express.json()); // Parse incoming JSON payloads
