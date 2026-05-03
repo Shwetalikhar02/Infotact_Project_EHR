@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
 
 import authRoutes from './routes/authRoutes.js';
@@ -12,34 +11,14 @@ const app = express();
 
 // Global Middlewares
 
-// CORS must come FIRST, before helmet or any other middleware
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:8080',
-  'https://client-psi-seven-80.vercel.app',
-  'https://client-icnlat91i-ashutosh-0509s-projects.vercel.app',
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
+// Allow ALL cross-origin requests (no restrictive helmet headers)
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-// Handle preflight OPTIONS requests explicitly
-app.options('*', cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'unsafe-none' },
-})); // Security headers (configured to allow CORS)
+app.options('*', cors());
 
 app.use(express.json()); // Parse incoming JSON payloads
 app.use(morgan('dev')); // HTTP request logger
