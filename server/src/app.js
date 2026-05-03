@@ -16,8 +16,9 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:8080',
-    process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
-    'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
+    'https://client-psi-seven-80.vercel.app',
+    'https://client-icnlat91i-ashutosh-0509s-projects.vercel.app',
+    process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true
 })); // Cross-Origin Resource Sharing
