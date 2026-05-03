@@ -12,7 +12,13 @@ const app = express();
 
 // Global Middlewares
 app.use(helmet()); // Security headers
-app.use(cors()); // Cross-Origin Resource Sharing
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://your-app-name.vercel.app'
+  ],
+  credentials: true
+})); // Cross-Origin Resource Sharing
 app.use(express.json()); // Parse incoming JSON payloads
 app.use(morgan('dev')); // HTTP request logger
 
