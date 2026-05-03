@@ -11,17 +11,36 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 const app = express();
 
 // Global Middlewares
-app.use(helmet()); // Security headers
+
+// CORS must come FIRST, before helmet or any other middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'https://client-psi-seven-80.vercel.app',
+  'https://client-icnlat91i-ashutosh-0509s-projects.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'https://client-psi-seven-80.vercel.app',
-    'https://client-icnlat91i-ashutosh-0509s-projects.vercel.app',
-    process.env.CLIENT_URL,
-  ].filter(Boolean),
-  credentials: true
-})); // Cross-Origin Resource Sharing
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+})); // Security headers (configured to allow CORS)
+
 app.use(express.json()); // Parse incoming JSON payloads
 app.use(morgan('dev')); // HTTP request logger
 
