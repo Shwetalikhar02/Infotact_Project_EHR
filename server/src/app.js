@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
 
 import authRoutes from './routes/authRoutes.js';
@@ -11,13 +10,12 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 const app = express();
 
 // Global Middlewares
-app.use(helmet()); // Security headers
+
+// Allow ALL cross-origin requests (no restrictive helmet headers)
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:8080',
-    'http://10.178.130.23:8080',
-    'http://10.178.130.23:5173',
     process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
     'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
   ].filter(Boolean),
