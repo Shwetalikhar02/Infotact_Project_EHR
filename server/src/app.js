@@ -1,50 +1,42 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-
 import authRoutes from './routes/authRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 
-// Initialize express app
 const app = express();
 
-// Global Middlewares
-
-// Allow ALL cross-origin requests (no restrictive helmet headers)
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:8080',
-    process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
-    'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
+    'https://infotact-project-ehr-eta.vercel.app',
+    'https://client-psi-seven-80.vercel.app',
+    process.env.CLIENT_URL,
   ].filter(Boolean),
   credentials: true
-})); // Cross-Origin Resource Sharing
-app.use(express.json()); // Parse incoming JSON payloads
-app.use(morgan('dev')); // HTTP request logger
+}));
 
-// Routes
+app.use(express.json());
+app.use(morgan('dev'));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 
-// Root endpoint
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the Healthcare Management System API' });
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Healthcare API is running' });
 });
 
-// 404 handler
 app.use((req, res, next) => {
   res.status(404).json({ message: 'API Route Not Found' });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
