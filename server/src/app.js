@@ -16,6 +16,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:8080',
+    'http://10.178.130.23:8080',
+    'http://10.178.130.23:5173',
     process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
     'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
   ].filter(Boolean),

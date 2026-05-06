@@ -22,7 +22,7 @@ import NotFound from '@/pages/not-found/Index';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         {/* Public */}
         <Route path={ROUTE_PATHS.HOME} element={<LandingPage />} />
