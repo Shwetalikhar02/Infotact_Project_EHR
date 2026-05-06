@@ -19,3 +19,6 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Embedded repos
+client/Infotact_Project_EHR/
