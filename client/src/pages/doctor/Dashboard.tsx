@@ -4,13 +4,17 @@ import { motion } from 'framer-motion';
 import { Video, ClipboardList, Calendar, Users, Clock, CheckCircle, XCircle, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout, StatCard, SectionHeader, StatusBadge } from '@/components/DashboardLayout';
-import { CURRENT_DOCTOR, DOCTOR_APPOINTMENTS } from '@/data/index';
+import { DOCTOR_APPOINTMENTS } from '@/data/index';
 import { ROUTE_PATHS, STATUS_CONFIG } from '@/lib/index';
 import type { AppointmentStatus } from '@/lib/index';
+import { useAuthStore } from '@/store/authStore';
 
 export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState(DOCTOR_APPOINTMENTS);
+  const user = useAuthStore(state => state.user);
+  const doctorName = user?.name || 'Doctor';
+  const doctorEmail = user?.email || '';
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 1200);
@@ -27,10 +31,10 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <DashboardLayout role="doctor" userName={CURRENT_DOCTOR.name} userEmail={CURRENT_DOCTOR.email}>
+    <DashboardLayout role="doctor" userName={doctorName} userEmail={doctorEmail}>
       <div className="mb-6">
         <h1 className="text-foreground font-bold text-2xl">Doctor's Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Welcome back, {CURRENT_DOCTOR.name}. Here's your schedule for today.</p>
+        <p className="text-muted-foreground text-sm mt-1">Welcome back, {doctorName}. Here's your schedule for today.</p>
       </div>
 
       {/* Stats Cards */}
@@ -44,15 +48,20 @@ export default function DoctorDashboard() {
       <div className="grid lg:grid-cols-5 gap-6">
         {/* Appointment Queue */}
         <div className="lg:col-span-3">
-          <SectionHeader title="Today's Appointment Queue" subtitle="Active consultations for May 2, 2026" />
+          <SectionHeader title="Today's Appointment Queue" subtitle="Active consultations" />
 
           <div className="space-y-3">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="bg-card rounded-xl p-4 border border-border animate-pulse h-24" />
               ))
+            ) : todayUpcoming.length === 0 ? (
+              <div className="bg-card rounded-xl p-8 border border-border text-center">
+                <Calendar size={36} className="text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">No appointments scheduled</p>
+              </div>
             ) : (
-              appointments.filter(a => a.status === 'upcoming').map((apt, i) => (
+              todayUpcoming.map((apt, i) => (
                 <motion.div
                   key={apt.id}
                   initial={{ opacity: 0, y: 14 }}
@@ -154,7 +163,7 @@ export default function DoctorDashboard() {
             <div className="mt-5">
               <h3 className="text-foreground font-semibold text-sm mb-3">Completed Today</h3>
               <div className="space-y-2">
-                {completed.map((apt, i) => (
+                {completed.map((apt) => (
                   <div key={apt.id} className="bg-card rounded-xl p-3 border border-green-100 bg-green-50/30 flex items-center gap-3">
                     <CheckCircle size={16} className="text-green-500 shrink-0" />
                     <div>

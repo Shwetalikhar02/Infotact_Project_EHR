@@ -8,6 +8,7 @@ export const ROUTE_PATHS = {
   PATIENT_BOOK: '/patient/book',
   PATIENT_PRESCRIPTIONS: '/patient/prescriptions',
   PATIENT_PROFILE: '/patient/profile',
+  PATIENT_RECORDS: '/patient/records',
   // Doctor
   DOCTOR_DASHBOARD: '/doctor/dashboard',
   DOCTOR_APPOINTMENTS: '/doctor/appointments',
@@ -26,7 +27,7 @@ export const ROUTE_PATHS = {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export type UserRole = 'patient' | 'doctor' | 'admin';
-export type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled' | 'pending';
+export type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled' | 'pending' | 'scheduled';
 export type DoctorStatus = 'active' | 'pending' | 'suspended';
 
 export interface User {
@@ -112,10 +113,11 @@ export const SPECIALTIES = [
 ] as const;
 
 export const STATUS_CONFIG: Record<AppointmentStatus, { label: string; className: string }> = {
-  upcoming: { label: 'Upcoming', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  upcoming:  { label: 'Upcoming',  className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  scheduled: { label: 'Scheduled', className: 'bg-blue-100 text-blue-700 border-blue-200' },
   completed: { label: 'Completed', className: 'bg-green-100 text-green-700 border-green-200' },
   cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-700 border-red-200' },
-  pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  pending:   { label: 'Pending',   className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
 };
 
 export const DOCTOR_STATUS_CONFIG: Record<DoctorStatus, { label: string; className: string }> = {

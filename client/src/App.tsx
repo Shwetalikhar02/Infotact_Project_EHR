@@ -10,6 +10,7 @@ import PatientDashboard from '@/pages/patient/Dashboard';
 import PatientBook from '@/pages/patient/Book';
 import PatientPrescriptions from '@/pages/patient/Prescriptions';
 import PatientProfile from '@/pages/patient/Profile';
+import PatientRecords from '@/pages/patient/Records';
 import DoctorDashboard from '@/pages/doctor/Dashboard';
 import DoctorPrescription from '@/pages/doctor/Prescription';
 import DoctorPatients from '@/pages/doctor/Patients';
@@ -34,6 +35,7 @@ function App() {
         <Route path={ROUTE_PATHS.PATIENT_BOOK} element={<PatientBook />} />
         <Route path={ROUTE_PATHS.PATIENT_PRESCRIPTIONS} element={<PatientPrescriptions />} />
         <Route path={ROUTE_PATHS.PATIENT_PROFILE} element={<PatientProfile />} />
+        <Route path={ROUTE_PATHS.PATIENT_RECORDS} element={<PatientRecords />} />
 
         {/* Doctor */}
         <Route path={ROUTE_PATHS.DOCTOR_DASHBOARD} element={<DoctorDashboard />} />

@@ -2,20 +2,46 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Stethoscope, Calendar, Activity, CheckCircle,
-  XCircle, BarChart2, TrendingUp
+  XCircle, TrendingUp, DollarSign, UserPlus, Zap
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout, StatCard } from '@/components/DashboardLayout';
-import { CURRENT_ADMIN, DOCTORS, WEEKLY_APPOINTMENTS, ADMIN_STATS } from '@/data/index';
+import { DOCTORS, WEEKLY_APPOINTMENTS, ADMIN_STATS } from '@/data/index';
 import { DOCTOR_STATUS_CONFIG } from '@/lib/index';
 import type { DoctorStatus } from '@/lib/index';
+import { useAuthStore } from '@/store/authStore';
+
+const ACTIVITY_LOG = [
+  { id: 1, action: 'New patient registered',       user: 'patient@gmail.com',   time: '2m ago',  type: 'user' },
+  { id: 2, action: 'Appointment approved',          user: 'doctor@gmail.com',    time: '15m ago', type: 'appointment' },
+  { id: 3, action: 'Prescription generated',       user: 'Dr. Michael Chen',    time: '1h ago',  type: 'prescription' },
+  { id: 4, action: 'Doctor account activated',     user: 'Admin',               time: '2h ago',  type: 'admin' },
+  { id: 5, action: 'Video consultation completed', user: 'Dr. Priya Sharma',    time: '3h ago',  type: 'call' },
+  { id: 6, action: 'New doctor application',       user: 'Dr. Lisa Thompson',   time: '5h ago',  type: 'user' },
+];
+
+const PIE_DATA = [
+  { name: 'Patients', value: 11200, color: '#3b82f6' },
+  { name: 'Doctors',  value: 284,   color: '#00BFA5' },
+  { name: 'Admins',   value: 12,    color: '#a855f7' },
+];
+
+const activityTypeColor: Record<string, string> = {
+  user:         'bg-blue-500',
+  appointment:  'bg-accent',
+  prescription: 'bg-purple-500',
+  admin:        'bg-red-500',
+  call:         'bg-green-500',
+};
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [doctors, setDoctors] = useState(DOCTORS);
+  const user = useAuthStore(state => state.user);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 1500);
@@ -26,39 +52,41 @@ export default function AdminDashboard() {
     setDoctors(prev => prev.map(d => d.id === id ? { ...d, status } : d));
   };
 
-  const activeCount = doctors.filter(d => d.status === 'active').length;
+  const activeCount  = doctors.filter(d => d.status === 'active').length;
   const pendingCount = doctors.filter(d => d.status === 'pending').length;
+  const adminName    = user?.name || 'Admin User';
+  const adminEmail   = user?.email || 'admin@gmail.com';
 
   return (
-    <DashboardLayout role="admin" userName={CURRENT_ADMIN.name} userEmail={CURRENT_ADMIN.email}>
+    <DashboardLayout role="admin" userName={adminName} userEmail={adminEmail}>
       <div className="mb-6">
         <h1 className="text-foreground font-bold text-2xl">Admin Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">System overview and management for May 2, 2026.</p>
+        <p className="text-muted-foreground text-sm mt-1">System overview — {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <StatCard title="Total Users" value={loading ? '' : ADMIN_STATS.totalUsers.toLocaleString()} icon={<Users size={18} />} subtitle="Patients & Doctors" accentColor="bg-blue-500" loading={loading} />
-        <StatCard title="Active Doctors" value={loading ? '' : activeCount} icon={<Stethoscope size={18} />} subtitle={`${pendingCount} pending approval`} accentColor="bg-accent" loading={loading} />
-        <StatCard title="Appointments Today" value={loading ? '' : ADMIN_STATS.appointmentsToday} icon={<Calendar size={18} />} subtitle="Across all specialties" accentColor="bg-purple-500" loading={loading} />
-        <StatCard
-          title="System Status"
-          value={loading ? '' : '99.9%'}
-          icon={<Activity size={18} />}
-          subtitle={ADMIN_STATS.systemStatus}
-          accentColor="bg-green-500"
-          loading={loading}
-        />
+        <StatCard title="Total Users"          value={loading ? '' : ADMIN_STATS.totalUsers.toLocaleString()} icon={<Users size={18} />}       subtitle="Patients & Doctors"       accentColor="bg-blue-500"   loading={loading} />
+        <StatCard title="Active Doctors"       value={loading ? '' : activeCount}                             icon={<Stethoscope size={18} />}   subtitle={`${pendingCount} pending`} accentColor="bg-accent"     loading={loading} />
+        <StatCard title="Appointments Today"   value={loading ? '' : ADMIN_STATS.appointmentsToday}          icon={<Calendar size={18} />}      subtitle="Across all specialties"   accentColor="bg-purple-500" loading={loading} />
+        <StatCard title="Revenue This Month"   value={loading ? '' : '$48,392'}                              icon={<DollarSign size={18} />}    subtitle="+18.2% vs last month"     accentColor="bg-green-500"  loading={loading} />
       </div>
 
-      <div className="grid xl:grid-cols-5 gap-6">
-        {/* Analytics Chart */}
+      {/* Secondary Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-7">
+        <StatCard title="Active Sessions"  value={loading ? '' : '23'}  icon={<Zap size={18} />}        subtitle="Live video calls"      accentColor="bg-accent"     loading={loading} />
+        <StatCard title="New Users Today"  value={loading ? '' : '47'}  icon={<UserPlus size={18} />}   subtitle="Registrations today"   accentColor="bg-blue-500"   loading={loading} />
+        <StatCard title="System Uptime"    value={loading ? '' : '99.9%'} icon={<Activity size={18} />} subtitle="All services nominal"  accentColor="bg-green-500"  loading={loading} />
+      </div>
+
+      <div className="grid xl:grid-cols-5 gap-6 mb-6">
+        {/* Bar Chart */}
         <div className="xl:col-span-3">
           <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-foreground font-semibold text-base">Appointments This Week</h2>
-                <p className="text-muted-foreground text-xs mt-0.5">May 2026 — Daily breakdown</p>
+                <p className="text-muted-foreground text-xs mt-0.5">Daily breakdown</p>
               </div>
               <div className="flex items-center gap-1.5 text-accent text-sm font-medium">
                 <TrendingUp size={16} />
@@ -94,8 +122,8 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
               {[
                 { label: 'Total This Week', value: WEEKLY_APPOINTMENTS.reduce((s, d) => s + d.appointments, 0) },
-                { label: 'Daily Average', value: Math.round(WEEKLY_APPOINTMENTS.reduce((s, d) => s + d.appointments, 0) / 7) },
-                { label: 'Peak Day', value: WEEKLY_APPOINTMENTS.reduce((a, b) => a.appointments > b.appointments ? a : b).day },
+                { label: 'Daily Average',   value: Math.round(WEEKLY_APPOINTMENTS.reduce((s, d) => s + d.appointments, 0) / 7) },
+                { label: 'Peak Day',        value: WEEKLY_APPOINTMENTS.reduce((a, b) => a.appointments > b.appointments ? a : b).day },
               ].map(item => (
                 <div key={item.label} className="text-center">
                   <p className="text-foreground font-bold text-lg">{item.value}</p>
@@ -104,33 +132,79 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* System Health */}
-          <div className="bg-card rounded-2xl border border-border shadow-sm p-5 mt-5">
-            <h3 className="text-foreground font-semibold text-sm mb-4 flex items-center gap-2">
-              <Activity size={16} className="text-accent" /> System Health
-            </h3>
-            <div className="space-y-3">
-              {[
-                { label: 'API Uptime', value: 99.9, color: 'bg-green-500' },
-                { label: 'Video Service', value: 98.7, color: 'bg-green-500' },
-                { label: 'Database', value: 100, color: 'bg-green-500' },
-                { label: 'Storage', value: 72, color: 'bg-yellow-500' },
-              ].map(item => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-xs w-24 shrink-0">{item.label}</p>
-                  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                    <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${item.value}%` }} />
+        {/* Pie Chart */}
+        <div className="xl:col-span-2">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-5 h-full">
+            <h2 className="text-foreground font-semibold text-base mb-1">User Distribution</h2>
+            <p className="text-muted-foreground text-xs mb-4">Patients vs Doctors vs Admins</p>
+            {loading ? (
+              <div className="h-44 bg-muted rounded-xl animate-pulse" />
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={PIE_DATA}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {PIE_DATA.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.75rem',
+                      fontSize: '12px',
+                    }}
+                    formatter={(v: number) => [v.toLocaleString(), 'Users']}
+                  />
+                  <Legend iconType="circle" iconSize={10} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid xl:grid-cols-5 gap-6">
+        {/* Activity Log */}
+        <div className="xl:col-span-2">
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="text-foreground font-semibold text-sm">Recent Activity</h2>
+              <p className="text-muted-foreground text-xs">System events log</p>
+            </div>
+            <div className="divide-y divide-border">
+              {ACTIVITY_LOG.map((log, i) => (
+                <motion.div
+                  key={log.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="px-5 py-3 flex items-center gap-3"
+                >
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${activityTypeColor[log.type]}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-foreground text-xs">{log.action}</p>
+                    <p className="text-muted-foreground text-xs">{log.user}</p>
                   </div>
-                  <p className="text-foreground text-xs font-mono w-12 text-right">{item.value}%</p>
-                </div>
+                  <span className="text-muted-foreground text-xs shrink-0">{log.time}</span>
+                </motion.div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Doctors Table */}
-        <div className="xl:col-span-2">
+        {/* Doctor Management */}
+        <div className="xl:col-span-3">
           <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <div>
@@ -143,7 +217,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[600px] divide-y divide-border">
+            <div className="overflow-y-auto max-h-[400px] divide-y divide-border">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="px-5 py-4 animate-pulse">

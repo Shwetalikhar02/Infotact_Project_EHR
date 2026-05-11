@@ -205,3 +205,23 @@
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
   }
 }
+
+@layer utilities {
+  .hero-glow {
+    box-shadow: 0 0 40px -10px var(--color-accent);
+    animation: hero-glow-anim 4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+  
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+  
+  @keyframes hero-glow-anim {
+    0% {
+      box-shadow: 0 0 30px -15px var(--color-accent);
+    }
+    100% {
+      box-shadow: 0 0 60px -5px var(--color-accent);
+    }
+  }
+}

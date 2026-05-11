@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, FileText, Users, Video, Clock, Plus, ArrowRight } from 'lucide-react';
+import { Calendar, FileText, Users, Video, Clock, Plus, ArrowRight, ClipboardMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout, StatCard, SectionHeader, StatusBadge } from '@/components/DashboardLayout';
-import { PRESCRIPTIONS } from '@/data/index'; // Keep mock prescriptions for now if not fully implemented in UI
+import { PRESCRIPTIONS } from '@/data/index';
 import { ROUTE_PATHS, STATUS_CONFIG } from '@/lib/index';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/authStore';
@@ -23,7 +23,7 @@ export default function PatientDashboard() {
           return {
             id: d._id,
             doctorName: d.doctor.name,
-            specialty: 'Specialist', // Generic since it's not in User model yet
+            specialty: 'Specialist',
             status: d.status,
             date: dateObj.toLocaleDateString(),
             time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -39,7 +39,7 @@ export default function PatientDashboard() {
     fetchData();
   }, []);
 
-  const upcoming = appointments.filter(a => a.status === 'scheduled');
+  const upcoming = appointments.filter(a => a.status === 'scheduled' || a.status === 'upcoming');
   const completed = appointments.filter(a => a.status === 'completed');
 
   return (
@@ -51,12 +51,12 @@ export default function PatientDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
-          title="Upcoming Appointments"
+          title="Upcoming"
           value={loading ? '' : upcoming.length}
           icon={<Calendar size={18} />}
-          subtitle="Next: May 6, 2026"
+          subtitle="Scheduled appointments"
           accentColor="bg-blue-500"
           loading={loading}
         />
@@ -64,16 +64,24 @@ export default function PatientDashboard() {
           title="Prescriptions"
           value={loading ? '' : PRESCRIPTIONS.length}
           icon={<FileText size={18} />}
-          subtitle="Last: Apr 20, 2026"
+          subtitle="Digital prescriptions"
           accentColor="bg-purple-500"
           loading={loading}
         />
         <StatCard
-          title="Doctors Consulted"
+          title="Completed"
           value={loading ? '' : completed.length}
           icon={<Users size={18} />}
-          subtitle="Since joining"
+          subtitle="Past consultations"
           accentColor="bg-accent"
+          loading={loading}
+        />
+        <StatCard
+          title="Records"
+          value={loading ? '' : appointments.length}
+          icon={<ClipboardMinus size={18} />}
+          subtitle="Total visits"
+          accentColor="bg-green-500"
           loading={loading}
         />
       </div>
@@ -117,7 +125,7 @@ export default function PatientDashboard() {
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                      <span className="text-white font-semibold text-sm">{apt.doctorName.charAt(4)}</span>
+                      <span className="text-white font-semibold text-sm">{apt.doctorName.charAt(0)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -154,7 +162,7 @@ export default function PatientDashboard() {
                   <div key={i} className="bg-card rounded-xl p-3 border border-border animate-pulse h-16" />
                 ))
               ) : (
-                appointments.filter(a => a.status !== 'scheduled').slice(0, 3).map((apt, i) => (
+                appointments.filter(a => a.status !== 'scheduled' && a.status !== 'upcoming').slice(0, 3).map((apt, i) => (
                   <motion.div
                     key={apt.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -163,7 +171,7 @@ export default function PatientDashboard() {
                     className="bg-card rounded-xl p-3 border border-border flex items-center gap-3"
                   >
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <span className="text-muted-foreground font-medium text-xs">{apt.doctorName.charAt(4)}</span>
+                      <span className="text-muted-foreground font-medium text-xs">{apt.doctorName.charAt(0)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-foreground text-sm font-medium truncate">{apt.doctorName}</p>
@@ -232,8 +240,10 @@ export default function PatientDashboard() {
             <h3 className="text-foreground font-semibold text-sm mb-3">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Book Appointment', icon: <Plus size={16} />, path: ROUTE_PATHS.PATIENT_BOOK, color: 'bg-primary text-primary-foreground' },
-                { label: 'My Prescriptions', icon: <FileText size={16} />, path: ROUTE_PATHS.PATIENT_PRESCRIPTIONS, color: 'bg-accent/10 text-accent border border-accent/20' },
+                { label: 'Book Appointment', icon: <Plus size={16} />,           path: ROUTE_PATHS.PATIENT_BOOK,          color: 'bg-primary text-primary-foreground' },
+                { label: 'Prescriptions',    icon: <FileText size={16} />,       path: ROUTE_PATHS.PATIENT_PRESCRIPTIONS, color: 'bg-accent/10 text-accent border border-accent/20' },
+                { label: 'Medical Records',  icon: <ClipboardMinus size={16} />, path: ROUTE_PATHS.PATIENT_RECORDS,       color: 'bg-blue-500/10 text-blue-600 border border-blue-200' },
+                { label: 'My Profile',       icon: <Users size={16} />,          path: ROUTE_PATHS.PATIENT_PROFILE,       color: 'bg-purple-500/10 text-purple-600 border border-purple-200' },
               ].map((action) => (
                 <Link key={action.label} to={action.path}>
                   <div className={`${action.color} rounded-xl p-3 flex flex-col items-center gap-2 text-center cursor-pointer hover:opacity-90 transition-opacity`}>

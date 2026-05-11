@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, FileText, User, Users, BarChart2,
   Settings, LogOut, Menu, X, ChevronRight, Stethoscope, Shield,
-  Bell, ClipboardList
+  Bell, ClipboardList, ClipboardMinus
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import type { UserRole } from '@/lib/index';
 import { ROUTE_PATHS } from '@/lib/index';
+import { useAuthStore } from '@/store/authStore';
 
 interface NavItem {
   label: string;
@@ -26,50 +26,66 @@ interface DashboardLayoutProps {
 }
 
 const patientNav: NavItem[] = [
-  { label: 'Dashboard', path: ROUTE_PATHS.PATIENT_DASHBOARD, icon: <LayoutDashboard size={18} /> },
-  { label: 'My Appointments', path: ROUTE_PATHS.PATIENT_BOOK, icon: <Calendar size={18} /> },
-  { label: 'Prescriptions', path: ROUTE_PATHS.PATIENT_PRESCRIPTIONS, icon: <FileText size={18} /> },
-  { label: 'Profile', path: ROUTE_PATHS.PATIENT_PROFILE, icon: <User size={18} /> },
+  { label: 'Dashboard',        path: ROUTE_PATHS.PATIENT_DASHBOARD,    icon: <LayoutDashboard size={18} /> },
+  { label: 'My Appointments',  path: ROUTE_PATHS.PATIENT_BOOK,         icon: <Calendar size={18} /> },
+  { label: 'Prescriptions',    path: ROUTE_PATHS.PATIENT_PRESCRIPTIONS, icon: <FileText size={18} /> },
+  { label: 'Medical Records',  path: ROUTE_PATHS.PATIENT_RECORDS,      icon: <ClipboardMinus size={18} /> },
+  { label: 'Profile',          path: ROUTE_PATHS.PATIENT_PROFILE,      icon: <User size={18} /> },
 ];
 
 const doctorNav: NavItem[] = [
-  { label: 'Dashboard', path: ROUTE_PATHS.DOCTOR_DASHBOARD, icon: <LayoutDashboard size={18} /> },
+  { label: 'Dashboard',    path: ROUTE_PATHS.DOCTOR_DASHBOARD,    icon: <LayoutDashboard size={18} /> },
   { label: 'Appointments', path: ROUTE_PATHS.DOCTOR_APPOINTMENTS, icon: <Calendar size={18} /> },
-  { label: 'Patients', path: ROUTE_PATHS.DOCTOR_PATIENTS, icon: <Users size={18} /> },
+  { label: 'Patients',     path: ROUTE_PATHS.DOCTOR_PATIENTS,     icon: <Users size={18} /> },
   { label: 'Prescriptions', path: ROUTE_PATHS.DOCTOR_PRESCRIPTION, icon: <ClipboardList size={18} /> },
-  { label: 'Profile', path: ROUTE_PATHS.DOCTOR_PROFILE, icon: <User size={18} /> },
+  { label: 'Profile',      path: ROUTE_PATHS.DOCTOR_PROFILE,      icon: <User size={18} /> },
 ];
 
 const adminNav: NavItem[] = [
-  { label: 'Dashboard', path: ROUTE_PATHS.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
-  { label: 'Manage Doctors', path: ROUTE_PATHS.ADMIN_DOCTORS, icon: <Stethoscope size={18} /> },
-  { label: 'Manage Patients', path: ROUTE_PATHS.ADMIN_PATIENTS, icon: <Users size={18} /> },
-  { label: 'Analytics', path: ROUTE_PATHS.ADMIN_ANALYTICS, icon: <BarChart2 size={18} /> },
-  { label: 'Settings', path: ROUTE_PATHS.ADMIN_SETTINGS, icon: <Settings size={18} /> },
+  { label: 'Dashboard',       path: ROUTE_PATHS.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
+  { label: 'Manage Doctors',  path: ROUTE_PATHS.ADMIN_DOCTORS,   icon: <Stethoscope size={18} /> },
+  { label: 'Manage Patients', path: ROUTE_PATHS.ADMIN_PATIENTS,  icon: <Users size={18} /> },
+  { label: 'Analytics',       path: ROUTE_PATHS.ADMIN_ANALYTICS, icon: <BarChart2 size={18} /> },
+  { label: 'Settings',        path: ROUTE_PATHS.ADMIN_SETTINGS,  icon: <Settings size={18} /> },
 ];
 
 const navMap: Record<UserRole, NavItem[]> = {
   patient: patientNav,
-  doctor: doctorNav,
-  admin: adminNav,
+  doctor:  doctorNav,
+  admin:   adminNav,
 };
 
 const roleConfig: Record<UserRole, { label: string; color: string; icon: React.ReactNode }> = {
-  patient: { label: 'Patient', color: 'bg-blue-500', icon: <User size={14} /> },
-  doctor: { label: 'Doctor', color: 'bg-accent', icon: <Stethoscope size={14} /> },
-  admin: { label: 'Admin', color: 'bg-purple-500', icon: <Shield size={14} /> },
+  patient: { label: 'Patient', color: 'bg-blue-500',   icon: <User size={14} /> },
+  doctor:  { label: 'Doctor',  color: 'bg-accent',     icon: <Stethoscope size={14} /> },
+  admin:   { label: 'Admin',   color: 'bg-purple-500', icon: <Shield size={14} /> },
 };
+
+// Simulated notifications
+const NOTIFICATIONS = [
+  { id: 1, text: 'Appointment confirmed for May 12',  time: '2m ago',  read: false },
+  { id: 2, text: 'Prescription from Dr. Chen ready', time: '1h ago',  read: false },
+  { id: 3, text: 'Video call starting in 5 minutes', time: '4h ago',  read: true },
+  { id: 4, text: 'Profile updated successfully',     time: '1d ago',  read: true },
+];
 
 export function DashboardLayout({ children, role, userName, userEmail }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
   const navItems = navMap[role];
   const rc = roleConfig[role];
   const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
+    logout(); // Clear auth store
     navigate(ROUTE_PATHS.HOME);
   };
+
+  const markAllRead = () => setNotifications(n => n.map(x => ({ ...x, read: true })));
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -182,18 +198,56 @@ export function DashboardLayout({ children, role, userName, userEmail }: Dashboa
               <Menu size={20} className="text-foreground" />
             </button>
             <div className="hidden lg:block">
-              <h1 className="text-foreground font-semibold text-base">
-                {navItems.find(n => n.label === 'Dashboard')?.label || 'Dashboard'}
-              </h1>
+              <p className="text-foreground font-semibold text-base">MediConnect EHR</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Notification Bell */}
-            <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-              <Bell size={18} className="text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <Bell size={18} className="text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-accent rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <h3 className="text-foreground font-semibold text-sm">Notifications</h3>
+                      <div className="flex items-center gap-2">
+                        <button onClick={markAllRead} className="text-accent text-xs hover:underline">Mark all read</button>
+                        <button onClick={() => setNotifOpen(false)}><X size={14} className="text-muted-foreground" /></button>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-border max-h-72 overflow-y-auto">
+                      {notifications.map(n => (
+                        <div key={n.id} className={`px-4 py-3 flex items-start gap-3 ${!n.read ? 'bg-accent/5' : ''}`}>
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.read ? 'bg-muted-foreground/30' : 'bg-accent'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground text-xs">{n.text}</p>
+                            <p className="text-muted-foreground text-xs mt-0.5">{n.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* User Avatar + Name */}
             <div className="flex items-center gap-2.5 pl-2 border-l border-border">
@@ -209,6 +263,11 @@ export function DashboardLayout({ children, role, userName, userEmail }: Dashboa
             </div>
           </div>
         </header>
+
+        {/* Click outside to close notifications */}
+        {notifOpen && (
+          <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+        )}
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">

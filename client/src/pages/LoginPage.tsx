@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Stethoscope, Shield, Mail, Lock, User, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, Stethoscope, Shield, Mail, Lock, User, ChevronRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,20 +10,32 @@ import type { UserRole } from '@/lib/index';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/authStore';
 
+const DEMO_CREDENTIALS: Record<UserRole, { email: string; password: string; name: string; desc: string }> = {
+  admin:   { email: 'admin@gmail.com',   password: '00000000', name: 'Admin User',      desc: 'System management & analytics' },
+  doctor:  { email: 'doctor@gmail.com',  password: '00000000', name: 'Dr. Demo Doctor', desc: 'Patient consultations & prescriptions' },
+  patient: { email: 'patient@gmail.com', password: '00000000', name: 'Patient User',    desc: 'Book appointments & view records' },
+};
+
 export default function LoginPage() {
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('patient');
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: DEMO_CREDENTIALS.patient.email, password: DEMO_CREDENTIALS.patient.password });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const roles: { value: UserRole; label: string; icon: React.ReactNode }[] = [
-    { value: 'patient', label: 'Patient', icon: <User size={16} /> },
-    { value: 'doctor', label: 'Doctor', icon: <Stethoscope size={16} /> },
-    { value: 'admin', label: 'Admin', icon: <Shield size={16} /> },
+  const roles: { value: UserRole; label: string; icon: React.ReactNode; color: string }[] = [
+    { value: 'patient', label: 'Patient', icon: <User size={16} />, color: 'bg-blue-500' },
+    { value: 'doctor',  label: 'Doctor',  icon: <Stethoscope size={16} />, color: 'bg-accent' },
+    { value: 'admin',   label: 'Admin',   icon: <Shield size={16} />, color: 'bg-purple-500' },
   ];
+
+  const handleRoleSelect = (r: UserRole) => {
+    setRole(r);
+    setForm({ email: DEMO_CREDENTIALS[r].email, password: DEMO_CREDENTIALS[r].password });
+    setErrors({});
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -38,34 +50,33 @@ export default function LoginPage() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    
+
     setErrors({});
     setLoading(true);
-    
+
     try {
       const response = await api.post('/auth/login', {
         email: form.email,
         password: form.password,
       });
-      
+
       const data = response.data;
-      
-      // Save user to Zustand store
       setCredentials(data, data.token);
-      
-      // Navigate based on role returned from backend
+
       if (data.role === 'patient') navigate(ROUTE_PATHS.PATIENT_DASHBOARD);
       else if (data.role === 'doctor') navigate(ROUTE_PATHS.DOCTOR_DASHBOARD);
       else navigate(ROUTE_PATHS.ADMIN_DASHBOARD);
-      
+
     } catch (error: any) {
-      setErrors({ 
-        email: error.response?.data?.message || 'Failed to sign in. Please check your credentials.' 
+      setErrors({
+        email: error.response?.data?.message || 'Invalid credentials. Try the demo accounts below.',
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const cred = DEMO_CREDENTIALS[role];
 
   return (
     <div className="min-h-screen flex">
@@ -74,6 +85,7 @@ export default function LoginPage() {
         <div className="absolute inset-0">
           <div className="absolute top-1/4 right-0 w-80 h-80 rounded-full bg-accent/10 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-white/5 -translate-x-1/3" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-accent/5" />
         </div>
         <div className="relative z-10 flex flex-col h-full p-10">
           <Link to={ROUTE_PATHS.HOME} className="flex items-center gap-2.5">
@@ -89,23 +101,42 @@ export default function LoginPage() {
                 Welcome back to<br />
                 <span className="text-accent">better healthcare</span>
               </h1>
-              <p className="text-white/60 text-lg leading-relaxed">
+              <p className="text-white/60 text-lg leading-relaxed mb-8">
                 Sign in to access your personalized health dashboard, appointments, and medical records.
               </p>
             </motion.div>
 
-            <div className="mt-10 space-y-4">
-              {[
-                { icon: <Shield size={18} className="text-accent" />, text: 'Bank-level encryption for your data' },
-                { icon: <Stethoscope size={18} className="text-accent" />, text: '500+ board-certified specialists' },
-                { icon: <ChevronRight size={18} className="text-accent" />, text: 'Instant prescription delivery' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  {item.icon}
-                  <span className="text-white/70 text-sm">{item.text}</span>
-                </div>
-              ))}
-            </div>
+            {/* Demo Credentials Cards */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Zap size={14} className="text-accent" />
+                <span className="text-accent text-sm font-semibold">Demo Access — Click any role to auto-fill</span>
+              </div>
+              <div className="space-y-2">
+                {roles.map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => handleRoleSelect(r.value)}
+                    className={`w-full text-left p-3 rounded-xl border transition-all ${
+                      role === r.value
+                        ? 'bg-white/15 border-white/30 shadow-sm'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-7 h-7 rounded-lg ${r.color} flex items-center justify-center text-white`}>
+                        {r.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-semibold">{DEMO_CREDENTIALS[r.value].email}</p>
+                        <p className="text-white/50 text-xs">Password: <span className="font-mono">00000000</span></p>
+                      </div>
+                      {role === r.value && <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
           </div>
 
           {/* HIPAA Badge */}
@@ -144,7 +175,7 @@ export default function LoginPage() {
                 <button
                   key={r.value}
                   type="button"
-                  onClick={() => setRole(r.value)}
+                  onClick={() => handleRoleSelect(r.value)}
                   className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
                     role === r.value
                       ? 'bg-primary text-primary-foreground border-primary shadow-sm'
@@ -157,6 +188,20 @@ export default function LoginPage() {
               ))}
             </div>
           </div>
+
+          {/* Auto-filled credential hint */}
+          <motion.div
+            key={role}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 p-3 bg-accent/8 rounded-xl border border-accent/20 flex items-center gap-3"
+          >
+            <Zap size={14} className="text-accent shrink-0" />
+            <div>
+              <p className="text-accent text-xs font-semibold">{cred.name}</p>
+              <p className="text-muted-foreground text-xs">{cred.desc}</p>
+            </div>
+          </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
@@ -212,11 +257,16 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo hint */}
-          <div className="mt-5 p-3 bg-accent/10 rounded-lg border border-accent/20">
-            <p className="text-muted-foreground text-xs text-center">
-              <span className="text-accent font-medium">Demo Mode:</span> Select any role above and click Sign In to explore the portal.
-            </p>
+          {/* Mobile demo hint */}
+          <div className="lg:hidden mt-5 p-3 bg-accent/10 rounded-lg border border-accent/20 space-y-2">
+            <p className="text-accent text-xs font-semibold flex items-center gap-1"><Zap size={12} /> Demo Accounts</p>
+            {roles.map(r => (
+              <button key={r.value} onClick={() => handleRoleSelect(r.value)} className="w-full text-left">
+                <p className="text-muted-foreground text-xs hover:text-foreground transition-colors">
+                  <span className="font-medium text-foreground">{r.label}:</span> {DEMO_CREDENTIALS[r.value].email} / 00000000
+                </p>
+              </button>
+            ))}
           </div>
 
           <p className="text-center text-muted-foreground text-sm mt-6">

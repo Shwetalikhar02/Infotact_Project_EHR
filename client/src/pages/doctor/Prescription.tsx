@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { CURRENT_DOCTOR } from '@/data/index';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
 interface MedRow {
@@ -20,6 +20,9 @@ interface MedRow {
 const emptyMed = (): MedRow => ({ id: Math.random().toString(36).slice(2), name: '', dosage: '', frequency: '', duration: '' });
 
 export default function DoctorPrescription() {
+  const user = useAuthStore(state => state.user);
+  const doctorName = user?.name || 'Dr. Demo Doctor';
+  const doctorEmail = user?.email || 'doctor@gmail.com';
   const [patient, setPatient] = useState('James Martinez');
   const [diagnosis, setDiagnosis] = useState('');
   const [notes, setNotes] = useState('');
@@ -56,7 +59,7 @@ export default function DoctorPrescription() {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <DashboardLayout role="doctor" userName={CURRENT_DOCTOR.name} userEmail={CURRENT_DOCTOR.email}>
+    <DashboardLayout role="doctor" userName={doctorName} userEmail={doctorEmail}>
       <div className="mb-6">
         <h1 className="text-foreground font-bold text-2xl">Write Prescription</h1>
         <p className="text-muted-foreground text-sm mt-1">Create and issue a digital prescription for your patient.</p>
@@ -184,9 +187,9 @@ export default function DoctorPrescription() {
                     <p className="text-muted-foreground text-xs">Telemedicine Platform</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-foreground font-semibold text-xs">{CURRENT_DOCTOR.name}</p>
-                    <p className="text-muted-foreground text-xs">{CURRENT_DOCTOR.specialty}</p>
-                    <p className="text-muted-foreground text-xs">Lic. No: MED-{CURRENT_DOCTOR.id.toUpperCase()}2026</p>
+                    <p className="text-foreground font-semibold text-xs">{doctorName}</p>
+                    <p className="text-muted-foreground text-xs">Specialist</p>
+                    <p className="text-muted-foreground text-xs">Lic. No: MED-2026-001</p>
                   </div>
                 </div>
               </div>

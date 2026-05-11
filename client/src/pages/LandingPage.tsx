@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Video, Calendar, FileText, ArrowRight, Shield, Star,
   CheckCircle, ChevronRight, Stethoscope, Heart, Activity,
-  Phone, Mail, MapPin, Lock, Users, Award, Clock, User
+  Phone, Mail, MapPin, Lock, Users, Award, Clock, User,
+  ChevronDown, Send, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ROUTE_PATHS } from '@/lib/index';
 import { TESTIMONIALS } from '@/data/index';
+import { toast } from 'sonner';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -34,7 +39,7 @@ export default function LandingPage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-7">
-            {['Features', 'How It Works', 'Testimonials'].map((item) => (
+            {['Features', 'How It Works', 'Testimonials', 'FAQ', 'Contact'].map((item) => (
               <button
                 key={item}
                 onClick={() => document.getElementById(item.toLowerCase().replace(/ /g, '-'))?.scrollIntoView({ behavior: 'smooth' })}
@@ -98,8 +103,8 @@ export default function LandingPage() {
               <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
                   size="lg"
-                  onClick={() => navigate(ROUTE_PATHS.PATIENT_BOOK)}
-                  className="bg-accent hover:bg-accent/90 text-white rounded-full px-8 py-3 text-base font-semibold shadow-lg shadow-accent/25 gap-2"
+                  onClick={() => navigate(ROUTE_PATHS.LOGIN)}
+                  className="bg-accent hover:bg-accent/90 text-white rounded-full px-8 py-3 text-base font-semibold hero-glow gap-2"
                 >
                   Book Appointment
                   <ArrowRight size={18} />
@@ -419,6 +424,81 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── FAQ Section ── */}
+      <section id="faq" className="py-20 bg-background">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <span className="text-accent text-sm font-semibold uppercase tracking-widest">FAQ</span>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mt-2 mb-4">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">Everything you need to know about MediConnect.</p>
+          </motion.div>
+
+          <div className="max-w-2xl mx-auto space-y-3">
+            <FAQItem
+              q="How do I book an appointment?"
+              a="Simply create a free account, browse our doctors by specialty, choose an available time slot, and confirm your booking. You'll receive a confirmation instantly."
+            />
+            <FAQItem
+              q="Is my medical data secure?"
+              a="Absolutely. MediConnect is fully HIPAA compliant. All data is encrypted at rest and in transit using AES-256 encryption. We never share your data with third parties."
+            />
+            <FAQItem
+              q="How does the video consultation work?"
+              a="Once your appointment is confirmed, you'll see a 'Join Call' button on your dashboard 5 minutes before the scheduled time. Click it to enter a secure, end-to-end encrypted video room with your doctor."
+            />
+            <FAQItem
+              q="Can I get prescriptions through video calls?"
+              a="Yes! After your consultation, your doctor can issue a digitally signed prescription which will appear in your Prescriptions tab. You can download it as a PDF."
+            />
+            <FAQItem
+              q="What if I need to cancel or reschedule?"
+              a="You can cancel or reschedule appointments up to 2 hours before the scheduled time from your dashboard. There are no cancellation fees for rescheduling."
+            />
+            <FAQItem
+              q="Is MediConnect free to use?"
+              a="Creating an account is completely free. You only pay for consultations, and the fees are set transparently by each doctor on their profile."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Contact Form Section ── */}
+      <section id="contact" className="py-20 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-accent/8 translate-x-1/3 translate-y-1/3" />
+        </div>
+        <div className="container mx-auto px-4 lg:px-8 relative">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <span className="text-accent text-sm font-semibold uppercase tracking-widest">Get in Touch</span>
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mt-2 mb-4">We'd Love to Hear From You</h2>
+              <p className="text-white/60 text-lg leading-relaxed mb-8">Have a question, partnership inquiry, or feedback? Send us a message and our team will get back to you within 24 hours.</p>
+              <div className="space-y-4">
+                {[
+                  { icon: <Mail size={18} />, label: 'support@mediconnect.com' },
+                  { icon: <Phone size={18} />, label: '+1 (800) MEDI-CON' },
+                  { icon: <MapPin size={18} />, label: 'San Francisco, CA 94102' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-accent">{item.icon}</div>
+                    <span className="text-white/70 text-sm">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <ContactForm />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ── */}
       <footer className="bg-primary text-white py-12">
         <div className="container mx-auto px-4 lg:px-8">
@@ -481,4 +561,93 @@ export default function LandingPage() {
   );
 }
 
+// ─── FAQ Accordion Item ──────────────────────────────────────────────────────
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/50 transition-colors"
+      >
+        <span className="text-foreground font-medium text-sm pr-4">{q}</span>
+        <ChevronDown size={18} className={`text-muted-foreground shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          className="px-5 pb-5"
+        >
+          <p className="text-muted-foreground text-sm leading-relaxed">{a}</p>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
 
+// ─── Contact Form ────────────────────────────────────────────────────────────
+function ContactForm() {
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) return;
+    setSending(true);
+    setTimeout(() => {
+      toast.success('Message sent successfully!', { description: "We'll get back to you within 24 hours." });
+      setForm({ name: '', email: '', message: '' });
+      setSending(false);
+    }, 1000);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <MessageSquare size={18} className="text-accent" />
+        <h3 className="text-white font-semibold">Send a Message</h3>
+      </div>
+      <div>
+        <Input
+          placeholder="Your Name"
+          value={form.name}
+          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+          required
+        />
+      </div>
+      <div>
+        <Input
+          type="email"
+          placeholder="Your Email"
+          value={form.email}
+          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+          required
+        />
+      </div>
+      <div>
+        <Textarea
+          placeholder="Your Message..."
+          value={form.message}
+          onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 min-h-[100px]"
+          required
+        />
+      </div>
+      <Button
+        type="submit"
+        disabled={sending}
+        className="w-full bg-accent hover:bg-accent/90 text-white rounded-full gap-2 font-semibold"
+      >
+        {sending ? 'Sending...' : <><Send size={16} /> Send Message</>}
+      </Button>
+    </form>
+  );
+}

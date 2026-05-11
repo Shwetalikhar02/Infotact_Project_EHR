@@ -30,9 +30,8 @@ export default function RegisterPage() {
     if (!form.name.trim()) errs.name = 'Full name is required';
     if (!form.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email';
-    if (!form.phone.trim()) errs.phone = 'Phone number is required';
     if (!form.password) errs.password = 'Password is required';
-    else if (form.password.length < 8) errs.password = 'Password must be at least 8 characters';
+    else if (form.password.length < 6) errs.password = 'Password must be at least 6 characters';
     return errs;
   };
 
@@ -208,7 +207,7 @@ export default function RegisterPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+1 (555) 000-0000 (Optional)"
                   value={form.phone}
                   onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                   className={`pl-9 ${errors.phone ? 'border-destructive' : ''}`}
@@ -225,7 +224,7 @@ export default function RegisterPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 characters"
+                  placeholder="Min. 6 characters"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   className={`pl-9 pr-9 ${errors.password ? 'border-destructive' : ''}`}

@@ -2,16 +2,18 @@ import { motion } from 'framer-motion';
 import { Users, Search, Phone, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { CURRENT_DOCTOR, DOCTOR_APPOINTMENTS } from '@/data/index';
+import { DOCTOR_APPOINTMENTS } from '@/data/index';
+import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
 
 export default function DoctorPatients() {
+  const user = useAuthStore(state => state.user);
   const [search, setSearch] = useState('');
   const uniquePatients = Array.from(new Map(DOCTOR_APPOINTMENTS.map(a => [a.patientId, a])).values());
   const filtered = uniquePatients.filter(p => p.patientName.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <DashboardLayout role="doctor" userName={CURRENT_DOCTOR.name} userEmail={CURRENT_DOCTOR.email}>
+    <DashboardLayout role="doctor" userName={user?.name || 'Doctor'} userEmail={user?.email || ''}>
       <div className="mb-6">
         <h1 className="text-foreground font-bold text-2xl">My Patients</h1>
         <p className="text-muted-foreground text-sm mt-1">All patients under your care.</p>
