@@ -47,6 +47,7 @@ function App() {
         {/* Video Call */}
         <Route path={ROUTE_PATHS.CALL} element={<VideoCall />} />
 
+
         {/* Admin */}
         <Route path={ROUTE_PATHS.ADMIN_DASHBOARD} element={<AdminDashboard />} />
         <Route path={ROUTE_PATHS.ADMIN_DOCTORS} element={<AdminDoctors />} />
