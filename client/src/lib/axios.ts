@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 
 // Create a custom axios instance
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || 'https://infotact-project-ehr-1.onrender.com') + '/api',
+  baseURL: (import.meta.env.VITE_API_URL || 'https://infotact-project-ehr.onrender.com') + '/api',
   headers: {
     'Content-Type': 'application/json',
   },

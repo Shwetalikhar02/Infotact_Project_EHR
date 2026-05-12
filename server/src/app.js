@@ -7,17 +7,31 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 
 const app = express();
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:8081',
+  'https://infotact-project-ehr-eta.vercel.app',
+  'https://client-psi-seven-80.vercel.app',
+  'https://infotact-project-ehr.vercel.app',   // primary Vercel frontend
+  'https://infotact-project-ehr.onrender.com',  // Render backend (same-origin testing)
+  process.env.CLIENT_URL,                       // override via Render env dashboard
+].filter(Boolean).map(o => o.trim());           // trim any accidental whitespace
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'http://localhost:8081',
-    'https://infotact-project-ehr-eta.vercel.app',
-    'https://client-psi-seven-80.vercel.app',
-    'https://infotact-project-ehr.onrender.com', // Render backend (for same-origin testing)
-    process.env.CLIENT_URL,            // Set this to your Vercel URL in Render dashboard
-  ].filter(Boolean),
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow non-browser requests (Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
