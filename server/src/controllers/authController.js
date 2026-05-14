@@ -159,7 +159,8 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save({ validateBeforeSave: false });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    // Since the React frontend uses HashRouter, the URL must contain /#/
+    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password/${resetToken}`;
 
     try {
       await sendEmail(
