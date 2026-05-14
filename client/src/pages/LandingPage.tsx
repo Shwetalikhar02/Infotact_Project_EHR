@@ -592,19 +592,35 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 // ─── Contact Form ────────────────────────────────────────────────────────────
+import api from '@/lib/axios';
+
 function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
     setSending(true);
-    setTimeout(() => {
+    
+    try {
+      // Call the real backend feedback API
+      // Passing rating: 5 as default since it's required by the backend
+      await api.post('/feedback', { 
+        name: form.name, 
+        email: form.email, 
+        message: form.message,
+        rating: 5 
+      });
+      
       toast.success('Message sent successfully!', { description: "We'll get back to you within 24 hours." });
       setForm({ name: '', email: '', message: '' });
+    } catch (error) {
+      console.error("Feedback error:", error);
+      toast.error('Failed to send message', { description: "Please try again later or contact us directly." });
+    } finally {
       setSending(false);
-    }, 1000);
+    }
   };
 
   return (

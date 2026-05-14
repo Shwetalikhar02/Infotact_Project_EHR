@@ -6,6 +6,7 @@ import {
   getDoctors,
   forgotPassword,
   resetPassword,
+  validateResetToken,
 } from '../controllers/authController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import { auditLog } from '../middlewares/auditMiddleware.js';
@@ -19,7 +20,8 @@ router.get('/doctors', getDoctors); // Public route — anyone can see doctors
 
 // ── Password Reset routes ──────────────────────────────────────────────────
 router.post('/forgot-password', forgotPassword);
-router.put('/reset-password/:token', resetPassword);
+router.post('/reset-password/:token', resetPassword); // changed to POST per requirements
+router.get('/reset-password/:token/validate', validateResetToken);
 
 // ── Private routes ─────────────────────────────────────────────────────────
 router.get('/profile', protect, auditLog('VIEW_PROFILE'), getUserProfile);

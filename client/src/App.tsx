@@ -6,6 +6,8 @@ import { ROUTE_PATHS } from '@/lib/index';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 import PatientDashboard from '@/pages/patient/Dashboard';
 import PatientBook from '@/pages/patient/Book';
 import PatientPrescriptions from '@/pages/patient/Prescriptions';
@@ -29,6 +31,8 @@ function App() {
         <Route path={ROUTE_PATHS.HOME} element={<LandingPage />} />
         <Route path={ROUTE_PATHS.LOGIN} element={<LoginPage />} />
         <Route path={ROUTE_PATHS.REGISTER} element={<RegisterPage />} />
+        <Route path={ROUTE_PATHS.FORGOT_PASSWORD} element={<ForgotPassword />} />
+        <Route path={ROUTE_PATHS.RESET_PASSWORD} element={<ResetPassword />} />
 
         {/* Patient */}
         <Route path={ROUTE_PATHS.PATIENT_DASHBOARD} element={<PatientDashboard />} />

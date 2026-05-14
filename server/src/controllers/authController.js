@@ -141,7 +141,8 @@ export const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'Please provide your email address.' });
     }
 
-    const user = await User.findOne({ email });
+    // Find user by email (case-insensitive)
+    const user = await User.findOne({ email: new RegExp(`^${email}$`, 'i') });
 
     // Always return 200 to prevent email enumeration attacks
     if (!user) {
@@ -186,16 +187,24 @@ export const forgotPassword = async (req, res) => {
 
 /**
  * @desc    Reset password using the token from email link
- * @route   PUT /api/auth/reset-password/:token
+ * @route   POST /api/auth/reset-password/:token
  * @access  Public
  */
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
-    const { password } = req.body;
+    const { newPassword, confirmPassword } = req.body;
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'Please provide both newPassword and confirmPassword.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
     }
 
     // ── Hash the incoming plain token to compare against DB ─────────────
@@ -211,17 +220,43 @@ export const resetPassword = async (req, res) => {
     }
 
     // ── Update password and clear reset fields ───────────────────────────
-    user.password = password;
+    user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
     res.status(200).json({
       message: 'Password reset successful. You can now log in with your new password.',
-      token: generateToken(user._id),
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error during password reset.' });
+  }
+};
+
+/**
+ * @desc    Validate reset password token
+ * @route   GET /api/auth/reset-password/:token/validate
+ * @access  Public
+ */
+export const validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(200).json({ valid: false });
+    }
+
+    return res.status(200).json({ valid: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error during token validation.' });
   }
 };
