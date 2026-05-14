@@ -4,18 +4,24 @@ import {
   loginUser,
   getUserProfile,
   getDoctors,
+  forgotPassword,
+  resetPassword,
 } from '../controllers/authController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import { auditLog } from '../middlewares/auditMiddleware.js';
 
 const router = express.Router();
 
-// Public routes (with audit logging for login attempts)
+// ── Public routes ──────────────────────────────────────────────────────────
 router.post('/register', auditLog('USER_REGISTER'), registerUser);
 router.post('/login', auditLog('USER_LOGIN'), loginUser);
-router.get('/doctors', getDoctors); // Public route so anyone can see doctors
+router.get('/doctors', getDoctors); // Public route — anyone can see doctors
 
-// Private routes
+// ── Password Reset routes ──────────────────────────────────────────────────
+router.post('/forgot-password', forgotPassword);
+router.put('/reset-password/:token', resetPassword);
+
+// ── Private routes ─────────────────────────────────────────────────────────
 router.get('/profile', protect, auditLog('VIEW_PROFILE'), getUserProfile);
 
 export default router;

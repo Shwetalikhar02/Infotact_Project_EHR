@@ -1,15 +1,18 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User.js';
+import sendEmail from '../utils/sendEmail.js';
+import { welcomeEmail, passwordResetEmail } from '../utils/emailTemplates.js';
 
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '1d', // Token expires in 1 day
+    expiresIn: '1d',
   });
 };
 
 /**
- * @desc    Register a new user
+ * @desc    Register a new user + send welcome email
  * @route   POST /api/auth/register
  * @access  Public
  */
@@ -18,7 +21,6 @@ export const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     const userExists = await User.findOne({ email });
-
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -31,6 +33,17 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // ── Send welcome email (non-blocking — don't fail registration on email error) ──
+      try {
+        await sendEmail(
+          user.email,
+          `Welcome to EHR Health Portal, ${user.name}! 🎉`,
+          welcomeEmail(user.name, user.role)
+        );
+      } catch (emailError) {
+        console.error('[Register] Welcome email failed:', emailError.message);
+      }
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -56,7 +69,6 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check for user email and explicitly select password since it's hidden by default
     const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
@@ -113,5 +125,103 @@ export const getDoctors = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error fetching doctors' });
+  }
+};
+
+/**
+ * @desc    Request password reset — generates token & sends reset email
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Please provide your email address.' });
+    }
+
+    const user = await User.findOne({ email });
+
+    // Always return 200 to prevent email enumeration attacks
+    if (!user) {
+      return res.status(200).json({
+        message: 'If an account with that email exists, a password reset link has been sent.',
+      });
+    }
+
+    // ── Generate plain token & hash to store in DB ───────────────────────
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await user.save({ validateBeforeSave: false });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    try {
+      await sendEmail(
+        user.email,
+        'Password Reset Request — EHR Health Portal',
+        passwordResetEmail(user.name, resetLink)
+      );
+    } catch (emailError) {
+      // Roll back token on email failure
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+      console.error('[ForgotPassword] Email send failed:', emailError.message);
+      return res.status(500).json({ message: 'Failed to send reset email. Please try again later.' });
+    }
+
+    res.status(200).json({
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error during password reset request.' });
+  }
+};
+
+/**
+ * @desc    Reset password using the token from email link
+ * @route   PUT /api/auth/reset-password/:token
+ * @access  Public
+ */
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    // ── Hash the incoming plain token to compare against DB ─────────────
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }, // token must not be expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token.' });
+    }
+
+    // ── Update password and clear reset fields ───────────────────────────
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Password reset successful. You can now log in with your new password.',
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error during password reset.' });
   }
 };

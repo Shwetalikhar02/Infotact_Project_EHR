@@ -27,6 +27,16 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'doctor', 'patient', 'receptionist'],
       default: 'patient',
     },
+
+    // ── Password Reset Fields ───────────────────────────────────────────────
+    resetPasswordToken: {
+      type: String,
+      default: undefined,
+    },
+    resetPasswordExpire: {
+      type: Date,
+      default: undefined,
+    },
   },
   {
     timestamps: true,
